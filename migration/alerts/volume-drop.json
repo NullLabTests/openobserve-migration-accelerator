@@ -1,0 +1,21 @@
+{
+  "name": "log_volume_drop",
+  "stream_type": "logs",
+  "stream_name": "default",
+  "is_real_time": false,
+  "description": "Fires when the demo app stops emitting logs (fewer than 5 events in 5 minutes) — a classic 'pipeline broke' signal.",
+  "query_condition": {
+    "type": "sql",
+    "sql": "SELECT count(*) AS events FROM \"default\" WHERE service IS NOT NULL"
+  },
+  "trigger_condition": {
+    "period": 5,
+    "operator": "<=",
+    "threshold": 5,
+    "frequency": 1,
+    "frequency_type": "minutes",
+    "silence": 30
+  },
+  "destinations": ["slack-alerts"],
+  "enabled": true
+}

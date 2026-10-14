@@ -1,0 +1,107 @@
+{
+  "version": 5,
+  "title": "Service Overview",
+  "description": "Request rate, error rate and latency for the demo microservices. Built for the OpenObserve Migration Accelerator.",
+  "role": "",
+  "owner": "platform@example.com",
+  "tabs": [
+    {
+      "tabId": "default",
+      "name": "Default",
+      "panels": [
+        {
+          "id": "requests_per_min",
+          "type": "line",
+          "title": "Request rate (spans/min)",
+          "description": "HTTP server spans per minute for checkout-api.",
+          "config": { "show_legends": true },
+          "queryType": "sql",
+          "layout": { "x": 0, "y": 0, "w": 96, "h": 12, "i": 1 },
+          "queries": [
+            {
+              "query": "SELECT histogram(_timestamp, '1 minute') AS x_axis_1, count(*) AS y_axis_1 FROM \"checkout-api\" GROUP BY x_axis_1 ORDER BY x_axis_1",
+              "customQuery": true,
+              "config": { "promql_legend": "" },
+              "fields": {
+                "stream": "checkout-api",
+                "stream_type": "traces",
+                "x": [{ "label": "Timestamp", "alias": "x_axis_1", "column": "_timestamp" }],
+                "y": [{ "label": "Count", "alias": "y_axis_1", "column": "_timestamp", "aggregationFunction": "count" }],
+                "filter": { "filterType": "group", "logicalOperator": "AND", "conditions": [] }
+              }
+            }
+          ]
+        },
+        {
+          "id": "error_spans_per_min",
+          "type": "line",
+          "title": "Error spans / min",
+          "description": "Spans with span_status = ERROR.",
+          "config": { "show_legends": true },
+          "queryType": "sql",
+          "layout": { "x": 0, "y": 12, "w": 96, "h": 12, "i": 2 },
+          "queries": [
+            {
+              "query": "SELECT histogram(_timestamp, '1 minute') AS x_axis_1, count(*) AS y_axis_1 FROM \"checkout-api\" WHERE span_status = 'ERROR' GROUP BY x_axis_1 ORDER BY x_axis_1",
+              "customQuery": true,
+              "config": { "promql_legend": "" },
+              "fields": {
+                "stream": "checkout-api",
+                "stream_type": "traces",
+                "x": [{ "label": "Timestamp", "alias": "x_axis_1", "column": "_timestamp" }],
+                "y": [{ "label": "Errors", "alias": "y_axis_1", "column": "_timestamp", "aggregationFunction": "count" }],
+                "filter": { "filterType": "group", "logicalOperator": "AND", "conditions": [] }
+              }
+            }
+          ]
+        },
+        {
+          "id": "avg_latency",
+          "type": "line",
+          "title": "Average span latency",
+          "description": "Mean span duration across the two services (duration is in microseconds).",
+          "config": { "show_legends": true },
+          "queryType": "sql",
+          "layout": { "x": 0, "y": 24, "w": 96, "h": 12, "i": 3 },
+          "queries": [
+            {
+              "query": "SELECT histogram(_timestamp, '1 minute') AS x_axis_1, avg(CAST(duration AS DOUBLE)) AS y_axis_1 FROM \"checkout-api\" GROUP BY x_axis_1 ORDER BY x_axis_1",
+              "customQuery": true,
+              "config": { "promql_legend": "" },
+              "fields": {
+                "stream": "checkout-api",
+                "stream_type": "traces",
+                "x": [{ "label": "Timestamp", "alias": "x_axis_1", "column": "_timestamp" }],
+                "y": [{ "label": "Avg duration", "alias": "y_axis_1", "column": "duration" }],
+                "filter": { "filterType": "group", "logicalOperator": "AND", "conditions": [] }
+              }
+            }
+          ]
+        },
+        {
+          "id": "spans_by_operation",
+          "type": "table",
+          "title": "Slowest operations (avg ms)",
+          "description": "Average latency per operation, highest first.",
+          "config": {},
+          "queryType": "sql",
+          "layout": { "x": 0, "y": 36, "w": 96, "h": 12, "i": 4 },
+          "queries": [
+            {
+              "query": "SELECT operation_name, count(*) AS spans, avg(CAST(duration AS DOUBLE))/1000 AS avg_ms, max(CAST(duration AS DOUBLE))/1000 AS max_ms FROM \"checkout-api\" GROUP BY operation_name ORDER BY avg_ms DESC",
+              "customQuery": true,
+              "config": {},
+              "fields": {
+                "stream": "checkout-api",
+                "stream_type": "traces",
+                "x": [],
+                "y": [],
+                "filter": { "filterType": "group", "logicalOperator": "AND", "conditions": [] }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

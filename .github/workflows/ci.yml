@@ -1,0 +1,89 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  cost-estimator:
+    name: Cost estimator (Python)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: cost-estimator
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install
+        run: python -m pip install -e . pytest
+      - name: Test
+        run: python -m pytest tests/ -q
+      - name: Smoke run
+        run: python -m openobserve_cost --daily-gb 250 --retention-days 30 --source datadog
+
+  website:
+    name: Website (Next.js)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: website
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: website/package-lock.json
+      - name: Install
+        run: npm ci
+      - name: Build
+        run: npm run build
+
+  demo-app:
+    name: Demo app (Node)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: demo-app
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: demo-app/package-lock.json
+      - name: Install
+        run: npm ci
+      - name: Syntax check
+        run: |
+          node --check src/otel.js
+          node --check src/index.js
+          node --check src/logger.js
+          node --check loadgen/loadgen.js
+
+  configs:
+    name: Docker + config sanity
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Validate compose
+        run: |
+          cp .env.example .env
+          docker compose config -q
+      - name: Validate JSON assets
+        run: |
+          find . -name '*.json' \
+            -not -path '*/node_modules/*' -not -path '*/.next/*' \
+            -not -path '*/out/*' -not -name 'package-lock.json' \
+            -print0 | xargs -0 -n1 python3 -c 'import json,sys; json.load(open(sys.argv[1]))'
+      - name: Validate collector YAML
+        run: |
+          python -m pip install --quiet pyyaml
+          find config migration -name '*.yaml' -print0 | \
+            xargs -0 -n1 python -c 'import yaml,sys; yaml.safe_load(open(sys.argv[1]))'

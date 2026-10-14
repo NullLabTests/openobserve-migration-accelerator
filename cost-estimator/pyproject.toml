@@ -1,0 +1,36 @@
+[build-system]
+requires = ["setuptools>=64"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "openobserve-cost-estimator"
+version = "1.0.0"
+description = "Estimate OpenObserve storage + compute cost and compare it with Datadog, Splunk or Elastic spend."
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [{ name = "OpenObserve Migration Accelerator contributors" }]
+keywords = ["openobserve", "observability", "cost", "migration", "opentelemetry"]
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+    "Topic :: System :: Monitoring",
+]
+dependencies = []
+
+[project.optional-dependencies]
+dev = ["pytest>=7.0"]
+
+[project.scripts]
+oo-cost = "openobserve_cost.cli:main"
+
+[project.urls]
+Homepage = "https://github.com/NullLabTests/openobserve-migration-accelerator"
+
+[tool.setuptools]
+packages = ["openobserve_cost"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"

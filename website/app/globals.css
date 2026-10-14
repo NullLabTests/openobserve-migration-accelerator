@@ -1,0 +1,137 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: dark;
+}
+
+html,
+body {
+  background-color: #04060d;
+  color: #e6edf7;
+}
+
+body {
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Backdrop: layered radial glows + faint grid for depth. */
+.app-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  background:
+    radial-gradient(60rem 40rem at 15% -10%, rgba(34, 211, 238, 0.16), transparent 60%),
+    radial-gradient(50rem 40rem at 90% 0%, rgba(139, 92, 246, 0.18), transparent 55%),
+    radial-gradient(45rem 45rem at 50% 120%, rgba(45, 212, 191, 0.1), transparent 60%),
+    #04060d;
+}
+
+.app-backdrop::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background-image:
+    linear-gradient(rgba(148, 163, 184, 0.05) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(148, 163, 184, 0.05) 1px, transparent 1px);
+  background-size: 44px 44px;
+  mask-image: radial-gradient(ellipse 80% 60% at 50% 0%, #000 40%, transparent 100%);
+}
+
+/* Glass surface card */
+.glass {
+  background: linear-gradient(
+    180deg,
+    rgba(20, 29, 49, 0.72),
+    rgba(7, 11, 22, 0.72)
+  );
+  border: 1px solid rgba(148, 163, 184, 0.14);
+  backdrop-filter: blur(14px);
+}
+
+.glass-strong {
+  background: linear-gradient(
+    180deg,
+    rgba(24, 35, 58, 0.92),
+    rgba(9, 14, 26, 0.92)
+  );
+  border: 1px solid rgba(148, 163, 184, 0.18);
+  backdrop-filter: blur(18px);
+}
+
+/* Gradient text */
+.text-gradient {
+  background: linear-gradient(100deg, #67e8f9 0%, #a78bfa 45%, #5eead4 100%);
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: shimmer 8s linear infinite;
+}
+
+/* Gradient border ring */
+.ring-gradient {
+  position: relative;
+}
+.ring-gradient::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1px;
+  background: linear-gradient(140deg, rgba(34, 211, 238, 0.7), rgba(139, 92, 246, 0.5), transparent 70%);
+  -webkit-mask:
+    linear-gradient(#000 0 0) content-box,
+    linear-gradient(#000 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+/* Range sliders */
+input[type="range"] {
+  -webkit-appearance: none;
+  appearance: none;
+  height: 6px;
+  border-radius: 9999px;
+  background: rgba(148, 163, 184, 0.22);
+  outline: none;
+}
+input[type="range"]::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 9999px;
+  background: linear-gradient(140deg, #22d3ee, #8b5cf6);
+  border: 3px solid #04060d;
+  box-shadow: 0 0 0 1px rgba(34, 211, 238, 0.6), 0 0 18px rgba(34, 211, 238, 0.55);
+  cursor: pointer;
+}
+input[type="range"]::-moz-range-thumb {
+  width: 18px;
+  height: 18px;
+  border-radius: 9999px;
+  background: linear-gradient(140deg, #22d3ee, #8b5cf6);
+  border: 3px solid #04060d;
+  cursor: pointer;
+}
+
+/* Number input: strip spinners */
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+/* Thin scrollbars */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(148, 163, 184, 0.3) transparent;
+}

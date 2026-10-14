@@ -1,0 +1,84 @@
+{
+  "version": 5,
+  "title": "Trace + Log Correlation",
+  "description": "Surface trace_id on both spans and logs so you can jump between a trace and the log lines it produced.",
+  "role": "",
+  "owner": "platform@example.com",
+  "tabs": [
+    {
+      "tabId": "default",
+      "name": "Default",
+      "panels": [
+        {
+          "id": "recent_error_logs_with_trace",
+          "type": "table",
+          "title": "Recent error logs (with trace_id)",
+          "description": "Click a trace_id row to pivot to the matching trace. Logs carry trace_id automatically when emitted inside a span.",
+          "config": {},
+          "queryType": "sql",
+          "layout": { "x": 0, "y": 0, "w": 96, "h": 14, "i": 1 },
+          "queries": [
+            {
+              "query": "SELECT _timestamp, service, message, trace_id FROM \"default\" WHERE level = 'error' ORDER BY _timestamp DESC",
+              "customQuery": true,
+              "config": {},
+              "fields": {
+                "stream": "default",
+                "stream_type": "logs",
+                "x": [],
+                "y": [],
+                "filter": { "filterType": "group", "logicalOperator": "AND", "conditions": [] }
+              }
+            }
+          ]
+        },
+        {
+          "id": "slow_spans_with_trace",
+          "type": "table",
+          "title": "Slowest spans (with trace_id)",
+          "description": "Copy a trace_id to the Traces view to inspect the full waterfall.",
+          "config": {},
+          "queryType": "sql",
+          "layout": { "x": 0, "y": 14, "w": 96, "h": 14, "i": 2 },
+          "queries": [
+            {
+              "query": "SELECT trace_id, service_name, operation_name, CAST(duration AS DOUBLE)/1000 AS duration_ms, span_status FROM \"checkout-api\" ORDER BY duration DESC",
+              "customQuery": true,
+              "config": {},
+              "fields": {
+                "stream": "checkout-api",
+                "stream_type": "traces",
+                "x": [],
+                "y": [],
+                "filter": { "filterType": "group", "logicalOperator": "AND", "conditions": [] }
+              }
+            }
+          ]
+        },
+        {
+          "id": "logs_per_trace",
+          "type": "bar",
+          "title": "Top traces by log count",
+          "description": "Traces that emitted the most log lines — useful for spotting chatty failure paths.",
+          "config": { "show_legends": false },
+          "queryType": "sql",
+          "layout": { "x": 0, "y": 28, "w": 96, "h": 12, "i": 3 },
+          "queries": [
+            {
+              "query": "SELECT trace_id AS x_axis_1, count(*) AS y_axis_1 FROM \"default\" WHERE trace_id IS NOT NULL GROUP BY x_axis_1 ORDER BY y_axis_1 DESC LIMIT 20",
+              "customQuery": true,
+              "config": { "promql_legend": "" },
+              "fields": {
+                "stream": "default",
+                "stream_type": "logs",
+                "x": [{ "label": "Trace ID", "alias": "x_axis_1", "column": "trace_id" }],
+                "y": [{ "label": "Logs", "alias": "y_axis_1", "column": "trace_id", "aggregationFunction": "count" }],
+                "filter": { "filterType": "group", "logicalOperator": "AND", "conditions": [] }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

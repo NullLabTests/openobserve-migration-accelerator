@@ -1,0 +1,84 @@
+{
+  "version": 5,
+  "title": "Cost & Volume Tracking",
+  "description": "Ingest volume over time so you can forecast and compare against the CloudWatch/vendor bill. Uses the demo app's log stream.",
+  "role": "",
+  "owner": "platform@example.com",
+  "tabs": [
+    {
+      "tabId": "default",
+      "name": "Default",
+      "panels": [
+        {
+          "id": "log_events_per_min",
+          "type": "line",
+          "title": "Log events / min",
+          "description": "Event count in the demo log stream.",
+          "config": { "show_legends": true },
+          "queryType": "sql",
+          "layout": { "x": 0, "y": 0, "w": 96, "h": 12, "i": 1 },
+          "queries": [
+            {
+              "query": "SELECT histogram(_timestamp, '1 minute') AS x_axis_1, count(*) AS y_axis_1 FROM \"default\" WHERE service IS NOT NULL GROUP BY x_axis_1 ORDER BY x_axis_1",
+              "customQuery": true,
+              "config": { "promql_legend": "" },
+              "fields": {
+                "stream": "default",
+                "stream_type": "logs",
+                "x": [{ "label": "Timestamp", "alias": "x_axis_1", "column": "_timestamp" }],
+                "y": [{ "label": "Events", "alias": "y_axis_1", "column": "_timestamp", "aggregationFunction": "count" }],
+                "filter": { "filterType": "group", "logicalOperator": "AND", "conditions": [] }
+              }
+            }
+          ]
+        },
+        {
+          "id": "logs_by_service",
+          "type": "bar",
+          "title": "Log volume by service",
+          "description": "Which service is producing the most log lines.",
+          "config": { "show_legends": true },
+          "queryType": "sql",
+          "layout": { "x": 0, "y": 12, "w": 96, "h": 12, "i": 2 },
+          "queries": [
+            {
+              "query": "SELECT service AS x_axis_1, count(*) AS y_axis_1 FROM \"default\" WHERE service IS NOT NULL GROUP BY x_axis_1 ORDER BY y_axis_1 DESC",
+              "customQuery": true,
+              "config": { "promql_legend": "" },
+              "fields": {
+                "stream": "default",
+                "stream_type": "logs",
+                "x": [{ "label": "Service", "alias": "x_axis_1", "column": "service" }],
+                "y": [{ "label": "Events", "alias": "y_axis_1", "column": "_timestamp", "aggregationFunction": "count" }],
+                "filter": { "filterType": "group", "logicalOperator": "AND", "conditions": [] }
+              }
+            }
+          ]
+        },
+        {
+          "id": "estimated_stored_gb",
+          "type": "line",
+          "title": "Estimated raw volume per hour (KB)",
+          "description": "Bytes ingested per hour; divide by your compression ratio for storage cost.",
+          "config": { "show_legends": true },
+          "queryType": "sql",
+          "layout": { "x": 0, "y": 24, "w": 96, "h": 12, "i": 3 },
+          "queries": [
+            {
+              "query": "SELECT histogram(_timestamp, '1 hour') AS x_axis_1, sum(length(to_string(_raw))) AS y_axis_1 FROM \"default\" GROUP BY x_axis_1 ORDER BY x_axis_1",
+              "customQuery": true,
+              "config": { "promql_legend": "" },
+              "fields": {
+                "stream": "default",
+                "stream_type": "logs",
+                "x": [{ "label": "Timestamp", "alias": "x_axis_1", "column": "_timestamp" }],
+                "y": [{ "label": "KB", "alias": "y_axis_1", "column": "_raw", "aggregationFunction": "sum" }],
+                "filter": { "filterType": "group", "logicalOperator": "AND", "conditions": [] }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

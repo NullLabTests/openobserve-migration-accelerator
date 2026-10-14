@@ -1,0 +1,110 @@
+# ============================================================================
+# OpenTelemetry Collector configuration - OTLP in, OpenObserve out
+# ----------------------------------------------------------------------------
+# This is the single config mounted into the otel-collector container.
+#
+# Data flow:
+#   apps (OTLP 4317/4318) -> [otlp receiver] -> [batch] -> [otlphttp/openobserve]
+#                                                          -> OpenObserve
+#
+# The OpenObserve OTLP/HTTP endpoint is:
+#     http://<host>:5080/api/<organization>
+# The collector appends /v1/traces, /v1/metrics and /v1/logs automatically,
+# so the endpoint must NOT include those suffixes and must NOT end in a slash.
+#
+# Auth is HTTP Basic:  "Basic " + base64("<email>:<password>").
+# The header is injected from the OPENOBSERVE_AUTH env var (see .env.example)
+# so no credentials are hard-coded in this file.
+# ============================================================================
+
+receivers:
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        # CORS is enabled so browser-based SDKs (e.g. the browser example) can
+        # post directly to the collector during a POC.
+        cors:
+          allowed_origins:
+            - "http://localhost:*"
+            - "http://127.0.0.1:*"
+        endpoint: 0.0.0.0:4318
+
+  # Useful during a migration to prove the collector is alive before any
+  # application is wired up:
+  #   curl http://localhost:4318/v1/traces -d '{}'
+  # Prometheus scrape endpoint for the collector's own health metrics.
+  prometheus:
+    config:
+      scrape_configs:
+        - job_name: otel-collector
+          scrape_interval: 30s
+          static_configs:
+            - targets: ["localhost:8888"]
+
+processors:
+  # Protect the collector from memory blow-ups under load spikes.
+  memory_limiter:
+    check_interval: 1s
+    limit_percentage: 80
+    spike_limit_percentage: 25
+  # Batch improves compression and throughput into OpenObserve.
+  batch:
+    send_batch_size: 8192
+    timeout: 5s
+  # Attach the deployment environment to every signal so dashboards can slice
+  # by env even when an app forgets to set it.
+  resource:
+    attributes:
+      - key: deployment.environment
+        value: local-poc
+        action: upsert
+
+exporters:
+  # Primary sink: OpenObserve OTLP/HTTP. One exporter serves all three signals.
+  otlphttp/openobserve:
+    # NOTE: no stream-name header. OpenObserve defaults logs to the "default"
+    # stream and names trace/metric streams from service.name — setting a global
+    # stream-name would collapse traces into one stream. Add per-signal
+    # exporters instead if you need custom stream names.
+    endpoint: http://openobserve:5080/api/default
+    headers:
+      Authorization: ${env:OPENOBSERVE_AUTH}
+    compression: gzip
+    retry_on_failure:
+      enabled: true
+      initial_interval: 5s
+      max_interval: 30s
+      max_elapsed_time: 300s
+    sending_queue:
+      enabled: true
+      num_consumers: 4
+      queue_size: 1000
+
+  # Debug exporter: prints a summary of every batch to collector stdout.
+  # Handy for the first 5 minutes of a POC; set verbosity: basic and leave on,
+  # or switch to "detailed"/"normal" while troubleshooting.
+  debug:
+    verbosity: basic
+
+service:
+  telemetry:
+    logs:
+      level: info
+    metrics:
+      level: basic
+      address: 0.0.0.0:8888
+  pipelines:
+    traces:
+      receivers: [otlp]
+      processors: [memory_limiter, resource, batch]
+      exporters: [otlphttp/openobserve, debug]
+    metrics:
+      receivers: [prometheus, otlp]
+      processors: [memory_limiter, resource, batch]
+      exporters: [otlphttp/openobserve, debug]
+    logs:
+      receivers: [otlp]
+      processors: [memory_limiter, resource, batch]
+      exporters: [otlphttp/openobserve, debug]
