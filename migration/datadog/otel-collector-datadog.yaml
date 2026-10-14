@@ -62,10 +62,13 @@ processors:
 
 exporters:
   otlphttp/openobserve:
+    # NOTE: no stream-name header. OpenObserve defaults logs to the "default"
+    # stream and names trace/metric streams from service.name — setting a global
+    # stream-name would collapse traces into one stream. Add per-signal
+    # exporters instead if you need custom stream names.
     endpoint: http://openobserve:5080/api/default
     headers:
       Authorization: ${env:OPENOBSERVE_AUTH}
-      stream-name: default
     compression: gzip
     retry_on_failure:
       enabled: true

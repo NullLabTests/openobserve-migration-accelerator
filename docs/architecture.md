@@ -127,7 +127,7 @@ point of building the POC this way.
   apps portable and centralizes retry/backpressure. Matches how teams migrate
   without redeploying every app.
 - **OTLP/HTTP (not gRPC) in the demo**: traverses corporate proxies more easily;
-  the collector supports gRPC on `:4318`/`:5081` if you prefer.
+  the collector supports gRPC on `:4317` if you prefer.
 - **Two services, not one**: distributed traces and cross-service correlation
   are the features teams care about, so the demo exercises them.
 - **Static-export website**: the calculator is pure client-side math — no API,

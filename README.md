@@ -11,7 +11,7 @@ recipes, dashboards, alerts, runbook and cost model to plan a production cutover
 [![OpenObserve](https://img.shields.io/badge/OpenObserve-Parquet%20%2B%20object%20storage-2dd4bf.svg)](https://openobserve.ai)
 [![Made with Docker](https://img.shields.io/badge/docker%20compose-up-2496ED.svg)](./docker-compose.yml)
 
-> 💰 **Try the cost calculator (no install):** **[Vercel URL placeholder](https://openobserve-cost-calculator.vercel.app)**
+> 💰 **Try the cost calculator (no install):** **[openobserve-cost-calculator](https://website-theta-two-97.vercel.app)**
 > ← live web app · CLI lives in [`cost-estimator/`](./cost-estimator)
 
 ---
@@ -151,7 +151,7 @@ Comparison
   Estimated savings / year    : $269,073.00
 ```
 
-**Web:** the same model, interactive and pretty → **[Vercel URL placeholder](https://openobserve-cost-calculator.vercel.app)**.
+**Web:** the same model, interactive and pretty → **[openobserve-cost-calculator](https://website-theta-two-97.vercel.app)**.
 
 Assumptions (compression ratio, storage $/GB, provider rates) are documented and
 overridable. Treat the output as a POC conversation-starter, not an invoice. See

@@ -125,10 +125,12 @@ The same pattern works for other legacy receivers the collector ships:
 ## Verify
 
 ```bash
-# Count documents that landed in the last 5 minutes
-curl -s "http://localhost:5080/api/default/demo_logs/_json" \
+# Count documents that landed in the demo_logs stream
+# start_time/end_time are epoch microseconds (0 = open range); size=0 returns just the count.
+curl -s -X POST "http://localhost:5080/api/default/_search?type=logs" \
   -u "root@example.com:Complexpass#123" \
-  -d '{"query":{"sql":"SELECT count(*) FROM demo_logs","start_time":0}}'
+  -H "Content-Type: application/json" \
+  -d '{"query":{"sql":"SELECT count(*) FROM demo_logs","start_time":0,"end_time":0,"from":0,"size":0}}'
 ```
 
 Then open OpenObserve UI → **Logs** → stream `demo_logs`.

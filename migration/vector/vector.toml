@@ -23,7 +23,7 @@ include = ["/var/log/apps/*.log"]
 # --- NEW: OpenObserve sink -------------------------------------------------
 [sinks.openobserve_logs]
 type = "http"
-inputs = ["app_logs"]
+inputs = ["tag_migration"]
 # NOTE: for the demo stack the OpenObserve stream is _json per batch, so we use
 # the `_json` endpoint via the encoding + uri below.
 uri = "http://openobserve:5080/api/default/vector_logs/_json"
