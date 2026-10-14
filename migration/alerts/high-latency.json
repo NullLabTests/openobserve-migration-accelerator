@@ -1,0 +1,21 @@
+{
+  "name": "high_latency",
+  "stream_type": "traces",
+  "stream_name": "checkout-api",
+  "is_real_time": false,
+  "description": "Fires when more than 25 spans exceed 500ms in a 5 minute window.",
+  "query_condition": {
+    "type": "sql",
+    "sql": "SELECT count(*) AS slow_spans FROM \"checkout-api\" WHERE CAST(duration AS DOUBLE) > 500000"
+  },
+  "trigger_condition": {
+    "period": 5,
+    "operator": ">=",
+    "threshold": 25,
+    "frequency": 1,
+    "frequency_type": "minutes",
+    "silence": 15
+  },
+  "destinations": ["slack-alerts"],
+  "enabled": true
+}

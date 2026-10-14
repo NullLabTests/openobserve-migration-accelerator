@@ -1,0 +1,24 @@
+{
+  "name": "high_error_rate",
+  "stream_type": "traces",
+  "stream_name": "checkout-api",
+  "is_real_time": false,
+  "description": "Fires when more than 50 spans error in a 5 minute window.",
+  "query_condition": {
+    "type": "sql",
+    "sql": "SELECT count(*) AS err_count FROM \"checkout-api\" WHERE span_status = 'ERROR'"
+  },
+  "trigger_condition": {
+    "period": 5,
+    "operator": ">=",
+    "threshold": 50,
+    "frequency": 1,
+    "frequency_type": "minutes",
+    "silence": 15
+  },
+  "destinations": ["slack-alerts"],
+  "enabled": true,
+  "context_attributes": {
+    "runbook": "https://github.com/NullLabTests/openobserve-migration-accelerator/blob/main/migration/MIGRATION-RUNBOOK.md"
+  }
+}

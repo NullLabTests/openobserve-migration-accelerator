@@ -1,0 +1,67 @@
+# ============================================================================
+# Vector: dual-write logs/metrics to OpenObserve
+# ----------------------------------------------------------------------------
+# Keep your existing Datadog / Elastic sinks and add an OpenObserve sink.
+# Vector speaks OpenObserve's HTTP JSON ingest natively, so no collector is
+# required. (You can also add an `opentelemetry` sink pointed at a collector.)
+#
+# Endpoint shape:  POST http://<host>:5080/api/<org>/<stream>/_json
+# Auth:            HTTP Basic  (base64 of "email:password")  OR  an ingestion
+#                  token in the `Authorization: Bearer <token>` header.
+# ============================================================================
+
+[sources.app_logs]
+type = "file"
+include = ["/var/log/apps/*.log"]
+
+# --- Existing sink (leave in place during dual-write) ----------------------
+# [sinks.datadog_logs]
+# type = "datadog_logs"
+# inputs = ["app_logs"]
+# default_api_key = "${DD_API_KEY}"
+
+# --- NEW: OpenObserve sink -------------------------------------------------
+[sinks.openobserve_logs]
+type = "http"
+inputs = ["app_logs"]
+# NOTE: for the demo stack the OpenObserve stream is _json per batch, so we use
+# the `_json` endpoint via the encoding + uri below.
+uri = "http://openobserve:5080/api/default/vector_logs/_json"
+method = "post"
+encoding.codec = "json"
+compression = "gzip"
+request.retry_max_duration_secs = 3600
+request.timeout_secs = 30
+
+[sinks.openobserve_logs.auth]
+strategy = "basic"
+user = "root@example.com"
+password = "Complexpass#123"   # LOCAL DEMO ONLY — use env var in real life
+
+[sinks.openobserve_logs.request.headers]
+# Add an ingestion token instead of basic auth if you prefer:
+# Authorization = "Bearer ${OPENOBSERVE_TOKEN}"
+"X-Stream-Type" = "logs"
+
+[sinks.openobserve_logs.batch]
+max_events = 1000
+timeout_secs = 5
+
+# Add a constant field so migrated data is easy to identify.
+[transforms.tag_migration]
+type = "remap"
+inputs = ["app_logs"]
+source = '''
+  .migration_phase = "dual-write"
+'''
+
+# ============================================================================
+# METRICS (optional): Vector -> OpenObserve OTLP via the `http` sink is not
+# ideal for metrics; prefer an OTel Collector:
+#
+# [sinks.collector_otlp]
+# type = "opentelemetry"
+# inputs = ["internal_metrics"]
+# endpoint = "http://otel-collector:4317"
+# protocol = "grpc"
+# ============================================================================

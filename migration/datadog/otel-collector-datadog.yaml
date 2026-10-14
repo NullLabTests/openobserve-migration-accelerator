@@ -1,0 +1,102 @@
+# ============================================================================
+# Dual-write: Datadog Agent -> OpenTelemetry Collector -> OpenObserve
+# ----------------------------------------------------------------------------
+# This collector config lets you KEEP the Datadog Agent running while you begin
+# forwarding the same telemetry to OpenObserve. Nothing on the Datadog side
+# changes, so there is zero risk to the incumbent during the pilot.
+#
+# Two common Datadog sources are covered:
+#   1. DogStatsD metrics  -> statsd receiver
+#   2. Datadog Agent APM traces (datadog receiver, Agent >= 6.69 / 7.55)
+#
+# For logs from the Datadog Agent, use the "logs" pipeline with the
+# filelog/journald receivers (see the notes at the bottom) or protocol-forward.
+# ============================================================================
+
+receivers:
+  # --- Metrics pushed by the Datadog Agent via DogStatsD --------------------
+  # Point the agent at this collector:
+  #   DD_DOGSTATSD_URL=udp://<collector-host>:8125
+  statsd:
+    endpoint: 0.0.0.0:8125
+    aggregation_interval: 60s
+    enable_metric_type: true
+    is_monotonic_counter: false
+
+  # --- Traces forwarded by the Datadog Agent (OTLP-native) ------------------
+  # Configure the Datadog Agent to send traces here over OTLP:
+  #   DD_APM_ADDITIONAL_ENDPOINTS='{"http://<collector-host>:8126": ["pilot"]}'
+  # The `datadog` receiver also accepts the agent's trace payloads directly.
+  datadog:
+    endpoint: 0.0.0.0:8126
+    read_timeout: 60s
+
+  # --- Optional: keep an OTLP receiver so services can dual-send -----------
+  otlp:
+    protocols:
+      grpc:
+        endpoint: 0.0.0.0:4317
+      http:
+        endpoint: 0.0.0.0:4318
+
+processors:
+  memory_limiter:
+    check_interval: 1s
+    limit_percentage: 80
+    spike_limit_percentage: 25
+  batch:
+    send_batch_size: 8192
+    timeout: 5s
+  # Tag the migration so data is easy to find (and later delete).
+  attributes/migration:
+    actions:
+      - key: migration_phase
+        value: dual-write
+        action: upsert
+  # Datadog metric types need remapping to OTel conventions.
+  transform/datadog_metrics:
+    metric_statements:
+      - context: metric
+        statements:
+          - set(unit, "1") where unit == ""
+
+exporters:
+  otlphttp/openobserve:
+    endpoint: http://openobserve:5080/api/default
+    headers:
+      Authorization: ${env:OPENOBSERVE_AUTH}
+      stream-name: default
+    compression: gzip
+    retry_on_failure:
+      enabled: true
+
+  # Keep the Datadog sink if you want the collector itself to dual-write.
+  # Requires the datadog exporter (contrib) and DD_API_KEY.
+  # datadog:
+  #   api:
+  #     key: ${env:DD_API_KEY}
+  #     site: datadoghq.com
+
+service:
+  pipelines:
+    metrics:
+      receivers: [statsd, otlp]
+      processors: [memory_limiter, attributes/migration, transform/datadog_metrics, batch]
+      exporters: [otlphttp/openobserve]   # add `datadog` to dual-write here too
+    traces:
+      receivers: [datadog, otlp]
+      processors: [memory_limiter, attributes/migration, batch]
+      exporters: [otlphttp/openobserve]
+
+# ----------------------------------------------------------------------------
+# NOTES
+# ----------------------------------------------------------------------------
+# * DOGSTATSD: run the Datadog Agent with DD_DOGSTATSD_URL pointing here, or
+#   point your StatsD clients at :8125. Datadog keeps receiving; OpenObserve
+#   now gets the same metrics.
+# * LOGS: the simplest robust path is the OpenTelemetry Collector's
+#   `filelog` receiver (tails /var/log/pods, /var/log/containers, etc.) or the
+#   Datadog Agent's `logs_config` "additional_endpoints". See migration/hec/ for
+#   a raw HTTP fallback.
+# * AGENT VERSION: the `datadog` receiver needs a recent agent. Check
+#   https://docs.datadoghq.com/opentelemetry/ for the OTLP forwarder settings.

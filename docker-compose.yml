@@ -1,0 +1,174 @@
+# ============================================================================
+# OpenObserve Migration Accelerator - local POC stack
+# ----------------------------------------------------------------------------
+#   docker compose up -d
+#
+# Brings up a complete, self-contained observability backend plus a small
+# instrumented microservice demo so you can watch logs, metrics and traces
+# flow into OpenObserve in real time:
+#
+#   openobserve     -> the backend (UI + OTLP ingestion)
+#   otel-collector  -> OTLP receiver, fans out to OpenObserve
+#   demo-app (x2)   -> "checkout" and "orders" Node.js microservices
+#   loadgen         -> synthetic traffic generator so dashboards come alive
+#
+# No external dependencies, no cloud account, everything persists to a local
+# Docker volume. See README.md for URLs and login steps.
+# ============================================================================
+name: openobserve-migration-accelerator
+
+services:
+  # --------------------------------------------------------------------------
+  # OpenObserve: single-binary observability backend (logs + metrics + traces)
+  # storage mode "disk" keeps everything in one container for a laptop POC.
+  # --------------------------------------------------------------------------
+  openobserve:
+    # For production, pin an explicit release tag (e.g. openobserve:v1.0.4) so a
+    # restart can never silently upgrade you. `latest` keeps the POC fresh.
+    image: public.ecr.aws/zinclabs/openobserve:latest
+    container_name: oo-openobserve
+    restart: unless-stopped
+    environment:
+      ZO_ROOT_USER_EMAIL: ${ZO_ROOT_USER_EMAIL:-root@example.com}
+      ZO_ROOT_USER_PASSWORD: ${ZO_ROOT_USER_PASSWORD:-Complexpass#123}
+      ZO_DATA_DIR: /data
+      # Disable anonymous usage telemetry for a clean local/pentest environment.
+      ZO_TELEMETRY: "false"
+    ports:
+      - "5080:5080"   # Web UI + OTLP/HTTP ingestion + REST API
+      - "5081:5081"   # OTLP/gRPC ingestion
+    volumes:
+      - oo-data:/data
+    # NOTE: the published OpenObserve image is distroless — no sh/curl/wget — so
+    # a shell healthcheck cannot work. Use the binary's own self-probe, which
+    # performs an internal GET /node/status and exits non-zero on failure.
+    healthcheck:
+      test: ["CMD", "/openobserve", "node", "status"]
+      interval: 5s
+      timeout: 5s
+      retries: 24
+      start_period: 20s
+    networks: [observability]
+
+  # --------------------------------------------------------------------------
+  # OpenTelemetry Collector (contrib): the "toll booth" every signal passes
+  # through. Receives OTLP on 4317/4318 and exports to OpenObserve.
+  # --------------------------------------------------------------------------
+  otel-collector:
+    image: otel/opentelemetry-collector-contrib:0.114.0
+    container_name: oo-otel-collector
+    restart: unless-stopped
+    command: ["--config=/etc/otelcol/config.yaml"]
+    environment:
+      # Basic auth header used by the OpenObserve exporter (see config file).
+      OPENOBSERVE_AUTH: ${OPENOBSERVE_AUTH:-Basic cm9vdEBleGFtcGxlLmNvbTpDb21wbGV4cGFzcyMxMjM=}
+    volumes:
+      - ./config/otelcol-config.yaml:/etc/otelcol/config.yaml:ro
+    ports:
+      - "4317:4317"   # OTLP gRPC receiver
+      - "4318:4318"   # OTLP HTTP receiver
+      - "8888:8888"   # Collector internal metrics (Prometheus)
+    # service_started (not service_healthy): the exporter retries, so we never
+    # let a slow/flaky health probe block ingestion.
+    depends_on:
+      openobserve:
+        condition: service_started
+    networks: [observability]
+
+  # --------------------------------------------------------------------------
+  # Demo microservice #1 - "checkout-api": the public entry point. Calls the
+  # orders service downstream, so traces span two services automatically.
+  # --------------------------------------------------------------------------
+  checkout-api:
+    build:
+      context: ./demo-app
+    image: oo-migration-demo-app:local
+    container_name: oo-checkout-api
+    restart: unless-stopped
+    environment:
+      SERVICE_ROLE: checkout
+      OTEL_SERVICE_NAME: checkout-api
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+      OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+      OTEL_RESOURCE_ATTRIBUTES: deployment.environment=local-poc,service.version=1.0.0
+      DOWNSTREAM_URL: http://orders-api:8081
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      PORT: "8080"
+    ports:
+      - "8080:8080"   # exposed so you can curl it directly
+    depends_on:
+      otel-collector:
+        condition: service_started
+    networks: [observability]
+
+  # --------------------------------------------------------------------------
+  # Demo microservice #2 - "orders-api": internal service called by checkout.
+  # Same image, different role selected via SERVICE_ROLE.
+  # --------------------------------------------------------------------------
+  orders-api:
+    build:
+      context: ./demo-app
+    image: oo-migration-demo-app:local
+    container_name: oo-orders-api
+    restart: unless-stopped
+    environment:
+      SERVICE_ROLE: orders
+      OTEL_SERVICE_NAME: orders-api
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+      OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+      OTEL_RESOURCE_ATTRIBUTES: deployment.environment=local-poc,service.version=1.0.0
+      LOG_LEVEL: ${LOG_LEVEL:-info}
+      PORT: "8081"
+    depends_on:
+      otel-collector:
+        condition: service_started
+    networks: [observability]
+
+  # --------------------------------------------------------------------------
+  # Load generator: keeps a steady stream of requests (and a few deliberate
+  # errors/slow calls) hitting checkout-api so the UI is never empty.
+  # --------------------------------------------------------------------------
+  loadgen:
+    build:
+      context: ./demo-app/loadgen
+    image: oo-migration-loadgen:local
+    container_name: oo-loadgen
+    restart: unless-stopped
+    environment:
+      TARGET_URL: http://checkout-api:8080
+      LOADGEN_RPS: ${LOADGEN_RPS:-20}
+    depends_on:
+      checkout-api:
+        condition: service_started
+    networks: [observability]
+
+  # --------------------------------------------------------------------------
+  # OPTIONAL (bonus): AI / LLM observability demo. Emits OpenTelemetry gen_ai
+  # spans from a simulated agent loop. Not started by default — enable with:
+  #     docker compose --profile ai up -d
+  # --------------------------------------------------------------------------
+  ai-agent:
+    build:
+      context: ./ai-observability
+    image: oo-migration-ai-agent:local
+    container_name: oo-ai-agent
+    restart: "no"
+    profiles: ["ai"]
+    environment:
+      OTEL_SERVICE_NAME: ai-agent-demo
+      OTEL_EXPORTER_OTLP_ENDPOINT: http://otel-collector:4318
+      OTEL_EXPORTER_OTLP_PROTOCOL: http/protobuf
+      GENAI_MODEL: gpt-4o-mini
+      AGENT_ITERATIONS: "8"
+    depends_on:
+      otel-collector:
+        condition: service_started
+    networks: [observability]
+
+volumes:
+  oo-data:
+    name: oo-migration-data
+
+networks:
+  observability:
+    name: oo-migration-net
