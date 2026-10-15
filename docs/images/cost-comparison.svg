@@ -1,0 +1,46 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 920 440" role="img" aria-label="Estimated monthly observability cost: Splunk about 93,750 dollars, Datadog about 22,500 dollars, Elastic about 11,250 dollars, OpenObserve about 77 dollars per month">
+  <title>Estimated monthly observability cost (250 GB/day, 30-day retention)</title>
+  <defs>
+    <linearGradient id="ooGrad" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#22d3ee"/>
+      <stop offset="1" stop-color="#2dd4bf"/>
+    </linearGradient>
+    <filter id="ooGlow" x="-80%" y="-80%" width="260%" height="260%">
+      <feGaussianBlur stdDeviation="6" result="b"/>
+      <feMerge>
+        <feMergeNode in="b"/>
+        <feMergeNode in="SourceGraphic"/>
+      </feMerge>
+    </filter>
+  </defs>
+
+  <rect x="1" y="1" width="918" height="438" rx="16" fill="#0b1220" stroke="#1e293b"/>
+
+  <text x="30" y="46" font-family="Segoe UI, Roboto, Helvetica, Arial, sans-serif" font-size="22" font-weight="700" fill="#e2e8f0">Estimated monthly observability cost</text>
+  <text x="30" y="72" font-family="Segoe UI, Roboto, Helvetica, Arial, sans-serif" font-size="13" fill="#94a3b8">250 GB/day ingested · 30-day retention · public list-price ballparks</text>
+
+  <line x1="200" y1="96" x2="200" y2="350" stroke="#1e293b" stroke-width="1"/>
+
+  <!-- Splunk -->
+  <text x="30" y="128" font-family="Segoe UI, Roboto, Helvetica, Arial, sans-serif" font-size="15" font-weight="600" fill="#cbd5e1">Splunk</text>
+  <rect x="200" y="104" width="553" height="36" rx="6" fill="#f87171"/>
+  <text x="894" y="129" text-anchor="end" font-family="Segoe UI, Roboto, Helvetica, Arial, sans-serif" font-size="16" font-weight="600" fill="#f1f5f9">$93,750</text>
+
+  <!-- Datadog -->
+  <text x="30" y="194" font-family="Segoe UI, Roboto, Helvetica, Arial, sans-serif" font-size="15" font-weight="600" fill="#cbd5e1">Datadog</text>
+  <rect x="200" y="170" width="133" height="36" rx="6" fill="#c084fc"/>
+  <text x="894" y="195" text-anchor="end" font-family="Segoe UI, Roboto, Helvetica, Arial, sans-serif" font-size="16" font-weight="600" fill="#f1f5f9">$22,500</text>
+
+  <!-- Elastic -->
+  <text x="30" y="260" font-family="Segoe UI, Roboto, Helvetica, Arial, sans-serif" font-size="15" font-weight="600" fill="#cbd5e1">Elastic</text>
+  <rect x="200" y="236" width="66" height="36" rx="6" fill="#fbbf24"/>
+  <text x="894" y="261" text-anchor="end" font-family="Segoe UI, Roboto, Helvetica, Arial, sans-serif" font-size="16" font-weight="600" fill="#f1f5f9">$11,250</text>
+
+  <!-- OpenObserve -->
+  <text x="30" y="326" font-family="Segoe UI, Roboto, Helvetica, Arial, sans-serif" font-size="15" font-weight="700" fill="#5eead4">OpenObserve</text>
+  <rect x="200" y="302" width="7" height="36" rx="3" fill="url(#ooGrad)" filter="url(#ooGlow)"/>
+  <text x="894" y="327" text-anchor="end" font-family="Segoe UI, Roboto, Helvetica, Arial, sans-serif" font-size="16" font-weight="700" fill="#5eead4">$77</text>
+
+  <text x="30" y="392" font-family="Segoe UI, Roboto, Helvetica, Arial, sans-serif" font-size="12.5" fill="#94a3b8">OpenObserve's bar is a sliver at this scale — that is the point. At this volume it runs ~291× cheaper than Datadog.</text>
+  <text x="30" y="414" font-family="Segoe UI, Roboto, Helvetica, Arial, sans-serif" font-size="12.5" fill="#64748b">Assumptions are documented and overridable — see cost-estimator/README.md.</text>
+</svg>

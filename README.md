@@ -7,12 +7,51 @@ microservices with a single `docker compose up` — then use the migration
 recipes, dashboards, alerts, runbook and cost model to plan a production cutover.
 
 [![License: MIT](https://img.shields.io/badge/License-MIT-22d3ee.svg)](./LICENSE)
+[![Live demo](https://img.shields.io/badge/demo-live%20calculator-14b8a6.svg?logo=vercel&logoColor=white)](https://openobserve-cost-calculator.vercel.app)
 [![OpenTelemetry](https://img.shields.io/badge/OpenTelemetry-OTLP-8b5cf6.svg)](https://opentelemetry.io)
 [![OpenObserve](https://img.shields.io/badge/OpenObserve-Parquet%20%2B%20object%20storage-2dd4bf.svg)](https://openobserve.ai)
-[![Made with Docker](https://img.shields.io/badge/docker%20compose-up-2496ED.svg)](./docker-compose.yml)
+[![Made with Docker](https://img.shields.io/badge/docker%20compose-up-2496ED.svg?logo=docker&logoColor=white)](./docker-compose.yml)
+[![PRs welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](./CONTRIBUTING.md)
 
-> 💰 **Try the cost calculator (no install):** **[openobserve-cost-calculator](https://website-theta-two-97.vercel.app)**
+> 💰 **Try the cost calculator (no install):** **[openobserve-cost-calculator.vercel.app](https://openobserve-cost-calculator.vercel.app)**
 > ← live web app · CLI lives in [`cost-estimator/`](./cost-estimator)
+
+---
+
+## The savings, at a glance
+
+![Estimated monthly observability cost: OpenObserve about $77/mo vs Datadog $22,500, Elastic $11,250, Splunk $93,750 at 250 GB/day](./docs/images/cost-comparison.svg)
+
+At **250 GB/day with 30-day retention**, the same telemetry costs roughly:
+
+| Platform | Est. monthly | Est. annual | vs OpenObserve |
+| --- | ---: | ---: | ---: |
+| Splunk | $93,750 | $1,125,000 | ~1,214× |
+| Datadog | $22,500 | $270,000 | ~291× |
+| Elastic | $11,250 | $135,000 | ~146× |
+| **OpenObserve** | **$77.25** | **$927** | — |
+
+> These are public list-price ballparks for framing a POC, **not quotes**.
+> The model is open, documented and overridable — plug in your real volume and
+> negotiated rates with the [CLI](#the-cost-angle) or the [web calculator](https://openobserve-cost-calculator.vercel.app).
+
+---
+
+## Table of contents
+
+- [The savings, at a glance](#the-savings-at-a-glance)
+- [Why this exists](#why-this-exists)
+- [Quickstart](#quickstart)
+- [Architecture](#architecture)
+- [What's inside](#whats-inside)
+- [The cost angle](#the-cost-angle)
+- [Migration assets](#migration-assets)
+- [How this maps to a real POC](#how-this-maps-to-a-real-poc)
+- [See it in action](#see-it-in-action)
+- [Roadmap](#roadmap)
+- [Contributing](#contributing)
+- [License](#license)
+- [Disclaimer](#disclaimer)
 
 ---
 
@@ -130,9 +169,16 @@ apps and the collector + backend stay identical. See
 
 Observability bills scale with **bytes stored and searched**. OpenObserve stores
 compressed Parquet on cheap object storage instead of a hot search index, which
-is where the savings come from.
+is where the savings come from:
 
-**CLI:**
+```
+stored_gb    = daily_gb × retention_days × compression_ratio   # ~10x compression
+storage_cost = stored_gb × storage_price                       # ~$0.023/GB/mo
+compute_cost = nodes × $60                                     # 1 modest node
+openobserve  = storage_cost + compute_cost
+```
+
+**CLI** (mirrors the [web calculator](https://openobserve-cost-calculator.vercel.app)):
 
 ```bash
 cd cost-estimator
@@ -151,11 +197,10 @@ Comparison
   Estimated savings / year    : $269,073.00
 ```
 
-**Web:** the same model, interactive and pretty → **[openobserve-cost-calculator](https://website-theta-two-97.vercel.app)**.
-
-Assumptions (compression ratio, storage $/GB, provider rates) are documented and
-overridable. Treat the output as a POC conversation-starter, not an invoice. See
-[`cost-estimator/README.md`](./cost-estimator/README.md).
+Every assumption (compression ratio, storage $/GB, provider rates) is a
+documented, overridable knob — see
+[`cost-estimator/README.md`](./cost-estimator/README.md). The Python and
+TypeScript models mirror each other — keep them in sync when changing assumptions.
 
 ---
 
@@ -189,9 +234,9 @@ Follow [`docs/poc-checklist.md`](./docs/poc-checklist.md) to run it end to end.
 
 ---
 
-## Screenshots
+## See it in action
 
-Capture these after `docker compose up` to fill the README (placeholders for now):
+After `docker compose up`, capture these to make the story tangible:
 
 1. **Logs** (`http://localhost:5080` → Logs → `default`) — filter `level = 'error'`, expand a row to see `trace_id`.
 2. **Traces** — open a trace from `checkout-api`; show the checkout→orders service map and the `orders.process` child span.
@@ -199,6 +244,18 @@ Capture these after `docker compose up` to fill the README (placeholders for now
 4. **Cost calculator** — screenshot the website hero + result card.
 
 > Drop real screenshots into `docs/images/` and reference them here.
+
+---
+
+## Roadmap
+
+- [ ] Receiver recipes for Loki, Kafka, and CloudWatch Logs.
+- [ ] Terraform module for the OpenObserve + Collector production deployment.
+- [ ] Grafana-compatible dashboard export.
+- [ ] Budget/alert templates tied to the cost model.
+- [ ] More provider price books (New Relic, Grafana Cloud, Logz.io).
+
+Have a use case? Open an issue or a PR — see [Contributing](#contributing).
 
 ---
 
