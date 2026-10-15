@@ -29,7 +29,7 @@ At **250 GB/day with 30-day retention**, the same telemetry costs roughly:
 | Splunk | $93,750 | $1,125,000 | ~1,214× |
 | Datadog | $22,500 | $270,000 | ~291× |
 | Elastic | $11,250 | $135,000 | ~146× |
-| **OpenObserve** | **$77** | **$927** | — |
+| **OpenObserve** | **$77.25** | **$927** | — |
 
 > These are public list-price ballparks for framing a POC, **not quotes**.
 > The model is open, documented and overridable — plug in your real volume and
@@ -200,7 +200,7 @@ Comparison
 Every assumption (compression ratio, storage $/GB, provider rates) is a
 documented, overridable knob — see
 [`cost-estimator/README.md`](./cost-estimator/README.md). The Python and
-TypeScript models are kept in lock-step by tests.
+TypeScript models mirror each other — keep them in sync when changing assumptions.
 
 ---
 

@@ -63,7 +63,8 @@ CI runs the same set on every PR ([`.github/workflows/ci.yml`](./.github/workflo
 
 - Match the surrounding file. **No comments explaining *what* — only *why*.**
 - Keep the cost model identical between `cost-estimator/` (Python) and
-  `website/lib/costModel.ts` (TS); tests assert they agree.
+  `website/lib/costModel.ts` (TS); the two are maintained by hand, so update
+  both together.
 - Don't add dependencies without a reason.
 
 ## Reporting issues
